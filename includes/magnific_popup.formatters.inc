@@ -59,6 +59,7 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
           ),
         ),
       );
+      $has_items = FALSE;
       foreach ($items as $delta => $item) {
         // @todo Detect the scheme and do appropriate things (e.g. youtube:).
         if ($wrapper = file_stream_wrapper_get_instance_by_uri($item['uri'])) {
@@ -76,6 +77,7 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
               ),
             ),
           );
+          $has_items = TRUE;
           $popup_gallery['item-' . $delta] = array(
             '#theme' => 'link',
             '#text' => render($image),
@@ -92,7 +94,9 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
           unset($wrapper);
         }
       }
-      $element[0] = $popup_gallery;
+      if ($has_items) {
+        $element[0] = $popup_gallery;
+      }
       break;
   }
   // dpm(array(
