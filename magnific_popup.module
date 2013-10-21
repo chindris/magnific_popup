@@ -4,21 +4,6 @@
  */
 
 /**
- * Implements hook_theme().
- */
-/* function magnific_popup_theme($existing, $type, $theme, $path) {
-  return array(
-    'magnific_popup_video' => array(
-      'variables' => array('uri' => NULL, 'options' => array()),
-      'file' => 'magnific_popup.theme.inc',
-      'path' => $path . '/includes/themes',
-      'template' => 'media-youtube-video',
-    ),
-  );
-}
- */
-
-/**
  * Implements hook_library().
  */
 function magnific_popup_library() {
@@ -28,7 +13,7 @@ function magnific_popup_library() {
   $module_path = drupal_get_path('module', 'magnific_popup');
   
   if (empty($magnific_library_path)) {
-    drupal_set_message(t('Please install the Magnific Popup JS library.'), 'error');
+    drupal_set_message(t('Please install the Magnific Popup JS library in sites/.../libraries/magnific-popup/.'), 'error');
     return array();
   }
   
@@ -47,14 +32,16 @@ function magnific_popup_library() {
     ),
   );
   
-  $libraries['magnific_popup_iframe'] = array(
-    'title' => 'Magnific Popup Module IFRAME Extension',
+  $libraries['magnific_popup_formatter'] = array(
+    'title' => 'Magnific Popup Module Extension',
     'website' => '',
     'version' => '1',
     'js' => array(
-      "{$module_path}/js/behaviors.mfp-iframe.js" => array('type' => 'file'),
+      "{$module_path}/js/behaviors.mfp-formatter.js" => array('type' => 'file'),
     ),
-    'css' => array(),
+    'css' => array(
+      "{$module_path}/css/mfp-formatter.css" => array('type' => 'file'),
+    ),
     'dependencies' => array(
       array('system', 'jquery'),
       array('magnific_popup', 'magnific_popup'),
@@ -98,5 +85,26 @@ function _magnific_popup_check_status() {
   return TRUE;
 }
 
-require_once('includes/magnific_popup.formatters.inc');
+/**
+ * Internal utility function to add one-time JS settings from extension modules.
+ */
+function _magnific_popup_add_api_js() {
+  $added = &drupal_static(__FUNCTION__, FALSE);
+  // Don't add JS more than once.
+  if ($added) {
+    return;
+  }
+  $settings = array(
+    'magnific_popup_api' => array(
+      'iframe_patterns' => module_invoke_all('magnific_popup_iframe_patterns'),
+    ),
+  );
+  $options = array(
+    'type' => 'setting',
+  );
+  
+  drupal_add_js($settings, $options);
+}
+
 require_once('includes/magnific_popup.image_styles.inc');
+require_once('includes/magnific_popup.formatters.inc');

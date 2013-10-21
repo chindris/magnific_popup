@@ -70,11 +70,12 @@ function magnific_popup_field_formatter_settings_summary($field, $instance, $vie
 function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $field, $instances, $langcode, &$items, $displays) {
   // Items are some kind of entity reference, be it via image or file type.
   // Load the corresponding items into a common format for our formatter_view().
-  $loaded_items = &drupal_static(__FUNCTION__, array());
-  // dpm($items);
-  $supported_schemes = array(
-    'youtube' => 'magnific_popup_yt_preview_wplay',
-  );
+  $static = &drupal_static(__FUNCTION__, array('loaded_items' => array(), 'thumbnail_schemes' => NULL));
+  $loaded_items = &$static['loaded_items'];
+  $thumbnail_schemes = &$static['thumbnail_schemes'];
+  if (!isset($thumbnail_schemes)) {
+    $thumbnail_schemes = module_invoke_all('magnific_popup_thumbnail_schemes');
+  }
   // Iterate through $items looking for valid gallery items. Refactor them into
   // a consistent format for magnific_popup_field_formatter_view().
   $wrappers = array();
@@ -113,12 +114,11 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
               $thumbnail_path = $uri;
             }
           }
-          // Adjust $thumbnail_path based on the $scheme - we support some
-          // modules out of the box.
+          // Adjust $thumbnail_path based on the $scheme.
           // @todo Make the default thumbnail_style configurable.
-          $thumbnail_style = 'thumbnail';
-          if (!empty($supported_schemes[$scheme])) {
-            $thumbnail_style = $supported_schemes[$scheme];
+          $thumbnail_style = 'magnific_popup_thumbnail';
+          if (!empty($thumbnail_schemes[$scheme])) {
+            $thumbnail_style = $thumbnail_schemes[$scheme];
           }
           $thumbnail_path = image_style_url($thumbnail_style, $thumbnail_path);
           $gallery_item = array(
@@ -152,8 +152,12 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
     return FALSE;
   }
   // Add Magnific Popup library to page.
-  drupal_add_library('magnific_popup', 'magnific_popup_iframe', FALSE);
-  // drupal_add_js(drupal_get_path('module', 'magnific_popup') . '/js/behaviors.mfp-iframe.js');
+  drupal_add_library('magnific_popup', 'magnific_popup_formatter', FALSE);
+  // Add API-derived extension JavaScript to the page; we do this here instead
+  // of another hook to prevent adding JS when it isn't necessary (i.e. when we
+  // aren't actually displaying any Magnific Popup content on the page).
+  _magnific_popup_add_api_js();
+  // Create the main container.
   $element = array();
   $settings = $display['settings'];
   $popup_gallery = array(
@@ -162,13 +166,23 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
       'class' => array(),
     ),
   );
-  if ($settings['gallery_style'] != 'no_gallery') {
-    $popup_gallery['#attributes']['class'][] = 'magnific-popup-iframe-gallery';
-  }
+  // Determine if/what the allowed trigger item is (which will get a thumbnail).
   $trigger_item = key($items);
   if ($settings['gallery_style'] == 'random_item') {
     $trigger_item = array_rand($items);
   }
+  // Figure out the base-class for the gallery/nogallery, which is generally
+  // something like 'mfp-nogallery-image' or 'mfp-gallery-iframe'.
+  $gallery_base_class = $settings['gallery_style'] == 'no_gallery' ?
+    'mfp-nogallery' : 'mfp-gallery';
+  if ($field['type'] == 'image') {
+    $gallery_base_class .= '-image';
+  }
+  else {
+    $gallery_base_class .= '-iframe';
+  }
+  $popup_gallery['#attributes']['class'][] = $gallery_base_class;
+  // Add each item to our container.
   foreach ($items as $delta => $item) {
     $popup_gallery['item-' . $delta] = array(
       '#theme' => 'link',
@@ -179,21 +193,22 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
         'html' => TRUE,
       ),
     );
-    $gallery_item_class = ($settings['gallery_style'] != 'no_gallery') ?
-      'magnific-popup-iframe-gallery-item' : 'magnific-popup-no-gallery-item';
-    $popup_gallery['item-' . $delta]['#options']['attributes']['class'][] = $gallery_item_class;
+    $popup_gallery['item-' . $delta]['#options']['attributes']['class'][] = 'mfp-item';
+    // This item has a thumbnail image if:
+    //  - the Gallery Type is "all items" (because all items have thumbs), or
+    //  - the Gallery Type is "no gallery", or
+    //  - the Gallery Type is "first item" and this $delta is the first item, or
+    //  - the Gallery Type is "random item" and this $delta is the random item.
     if ($settings['gallery_style'] == 'all_items' || $settings['gallery_style'] == 'no_gallery' || $delta == $trigger_item) {
       $image = array(
-        '#theme' => 'figure',
+        // Try to use a "figure" theme implementation if it exists, or fall back
+        // to "image".
+        '#theme' => array('figure', 'image'),
         '#path' => $item['thumbnail_path'],
         '#alt' => $item['title'],
         '#title' => $item['title'],
-        // Let the images be fluid.
         '#attributes' => array(
-          'style' => array(
-            'max-width: 100%;',
-            'height: auto;',
-          ),
+          'class' => array('mfp-thumbnail'),
         ),
       );
       $popup_gallery['item-' . $delta]['#text'] = render($image);

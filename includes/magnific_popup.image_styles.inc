@@ -11,10 +11,10 @@
 function magnific_popup_image_default_styles() {
   $styles = array();
   $module_path = drupal_get_path('module', 'magnific_popup');
-  // Exported image style: youtube_play_preview.
-  $styles['magnific_popup_yt_preview_wplay'] = array(
-    'name' => 'magnific_popup_yt_preview_wplay',
-    'label' => t('Magnific Popup: YouTube Preview w/Play button overlay'),
+  // Exported image style: thumbnail.
+  $styles['magnific_popup_thumbnail'] = array(
+    'name' => 'magnific_popup_thumbnail',
+    'label' => t('Magnific Popup: Default Thumbnail'),
     'effects' => array(
       4 => array(
         'label' => 'Scale and crop',
@@ -27,43 +27,9 @@ function magnific_popup_image_default_styles() {
         'name' => 'image_scale_and_crop',
         'data' => array(
           'width' => 480,
-          'height' => 270,
+          'height' => 360,
         ),
         'weight' => -10,
-      ),
-      2 => array(
-        'label' => 'Overlay (watermark)',
-        'help' => 'Choose the file image you wish to use as an overlay, and position it in a layer on top of the canvas.',
-        'effect callback' => 'canvasactions_file2canvas_effect',
-        'dimensions passthrough' => TRUE,
-        'form callback' => 'canvasactions_file2canvas_form',
-        'summary theme' => 'canvasactions_file2canvas_summary',
-        'module' => 'imagecache_canvasactions',
-        'name' => 'canvasactions_file2canvas',
-        'data' => array(
-          'xpos' => 'center',
-          'ypos' => 'bottom',
-          'alpha' => 100,
-          'path' => "{$module_path}/images/youtube-chrome_bottom.png",
-        ),
-        'weight' => -9,
-      ),
-      3 => array(
-        'label' => 'Overlay (watermark)',
-        'help' => 'Choose the file image you wish to use as an overlay, and position it in a layer on top of the canvas.',
-        'effect callback' => 'canvasactions_file2canvas_effect',
-        'dimensions passthrough' => TRUE,
-        'form callback' => 'canvasactions_file2canvas_form',
-        'summary theme' => 'canvasactions_file2canvas_summary',
-        'module' => 'imagecache_canvasactions',
-        'name' => 'canvasactions_file2canvas',
-        'data' => array(
-          'xpos' => 'center',
-          'ypos' => 'center',
-          'alpha' => 100,
-          'path' => "{$module_path}/images/youtube-play_button.png",
-        ),
-        'weight' => -8,
       ),
     ),
   );
