@@ -1,5 +1,5 @@
 name = Magnific Popup YouTube
-description = Enhance Magnific Popup to generate better thumbnails for YouTube:// File schemes.
+description = Enhance Magnific Popup support for YouTube:// File schemes.
 package = "Media"
 core = 7.x
 dependencies[] = media_youtube
