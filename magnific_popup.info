@@ -5,5 +5,3 @@ core = 7.x
 dependencies[] = libraries
 dependencies[] = file_entity
 dependencies[] = jquery_update
-dependencies[] = imagecache_actions
-dependencies[] = imagecache_canvasactions
