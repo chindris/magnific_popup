@@ -121,9 +121,15 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
             $thumbnail_style = $thumbnail_schemes[$scheme];
           }
           $thumbnail_path = image_style_url($thumbnail_style, $thumbnail_path);
+          // Get the title if it exists, or fallback to the filename.
+          $title = !empty($item['title']) ? $item['title'] : $item['filename'];
+          // Get the alt if it exists, or fallback to the title.
+          $alt = !empty($item['alt']) ? $item['alt'] : $title;
+          // Build the finished gallery item.
           $gallery_item = array(
             'item' => $item,
-            'title' => $item['filename'],
+            'title' => $title,
+            'alt' => $alt,
             'thumbnail_path' => $thumbnail_path,
             'target_uri' => $wrapper->getExternalUrl(),
           );
@@ -205,7 +211,7 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
         // to "image".
         '#theme' => array('figure', 'image'),
         '#path' => $item['thumbnail_path'],
-        '#alt' => $item['title'],
+        '#alt' => $item['alt'],
         '#title' => $item['title'],
         '#attributes' => array(
           'class' => array('mfp-thumbnail'),
