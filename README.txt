@@ -49,8 +49,8 @@ required).
 Install the third-party Magnific Popup library from https://github.com/dimsemenov/Magnific-Popup
 under sites/SITE/libraries (where SITE is "all," "default," etc.)  To be
 correctly detected and used, the JS and CSS must be located at these paths:
- - libraries/magnfic_popup/dist/jquery.magnific-popup.js
- - libraries/magnfic_popup/dist/magnific-popup.css
+ - libraries/magnific-popup/dist/jquery.magnific-popup.js
+ - libraries/magnific-popup/dist/magnific-popup.css
 
 Activate the Magnific Popup module, then manage the display of any File or Image
 fields, for example under admin/structure/types/manage/TYPE/display.  Choose
