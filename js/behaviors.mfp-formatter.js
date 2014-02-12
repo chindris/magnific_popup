@@ -30,7 +30,12 @@
         delete settings.magnific_popup_api.iframe_patterns;
       }
       var common_options_image = {
-        type: 'image'
+        type: 'image',
+        image: {
+          titleSrc: function(item) {
+            return $('img.mfp-thumbnail', item.el).attr('title') || '';
+          }
+        }
       };
       var common_options_gallery = {
         gallery: {enabled: true},
