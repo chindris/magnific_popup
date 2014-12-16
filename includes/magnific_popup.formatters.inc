@@ -127,12 +127,11 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
           $alt = !empty($item['alt']) ? $item['alt'] : $title;
           // Build the finished gallery item.
           $gallery_item = array(
-            'item' => $item,
             'title' => $title,
             'alt' => $alt,
             'thumbnail_path' => $thumbnail_path,
             'target_uri' => $wrapper->getExternalUrl(),
-          );
+          ) + $item;
           $loaded_items[$item['fid']] = $gallery_item;
         }
       }
