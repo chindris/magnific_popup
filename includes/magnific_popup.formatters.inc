@@ -11,12 +11,15 @@
  */
 function magnific_popup_field_formatter_info() {
   $gallery_options = _magnific_popup_gallery_options();
+
   return array(
     'magnific_popup_file_field_formatter' => array(
       'label' => t('Magnific Popup'),
       'field types' => array('file', 'image'),
       'settings'  => array(
         'gallery_style' => key($gallery_options),
+        'thumbnail_field' => array(),
+        'thumbnail_style' => array(),
       ),
     ),
   );
@@ -28,7 +31,16 @@ function magnific_popup_field_formatter_info() {
 function magnific_popup_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
   $display = $instance['display'][$view_mode];
   $settings = $display['settings'];
+
+  // Get all possible thumbnail fields.
+  $all_fields = !empty($form['#fields'])? $form['#fields'] : array();
+  $field_bundle = !empty($form['#bundle'])? $form['#bundle'] : '';
+  $thumbnail_options = _magnific_popup_thumbnail_options($all_fields, $field_bundle);
+  $thumbnail_available = (!empty($thumbnail_options))? TRUE : FALSE;
   
+  // Get all possible image styles.
+  $image_style_options = _magnific_popup_image_style_options();
+
   // Gallery Mode is TRUE when this field supports multiple items.
   $gallery_available = $field['cardinality'] !== 1;
   $gallery_options = _magnific_popup_gallery_options();
@@ -49,6 +61,22 @@ function magnific_popup_field_formatter_settings_form($field, $instance, $view_m
     '#disabled' => !$gallery_available,
     '#default_value' => $settings['gallery_style'],
     '#description' => t('Choose how this gallery displays its triggering element(s).'),
+  );
+  $element['thumbnail_field'] = array(
+    '#type' => 'select',
+    '#title' => t('Image Thumbnail Field'),
+    '#options' => $thumbnail_options,
+    '#disabled' => !$thumbnail_available,
+    '#default_value' => $settings['thumbnail_field'],
+    '#description' => t('Select field to be used as thumbnail.'),
+  );
+  $element['thumbnail_style'] = array(
+    '#type' => 'select',
+    '#title' => t('Thumbnail Style'),
+    '#options' => $image_style_options,
+    '#disabled' => !$thumbnail_available,
+    '#default_value' => $settings['thumbnail_style'],
+    '#description' => t('Select image style used to display thumbnail.'),
   );
   return $element;
 }
@@ -101,12 +129,23 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
         // Check that the resource was accessible.
         if ($wrappers[$scheme] && $wrappers[$scheme]->url_stat($item['uri'], STREAM_URL_STAT_QUIET) !== FALSE) {
           $wrapper = $wrappers[$scheme];
+          $classes = array();
           // Determine the file's info and store it.
           $thumbnail_path = FALSE;
           // MediaYouTubeStreamWrapper implements getLocalThumbnailPath() to
           // find the thumbnail path.
           if (method_exists($wrapper,'getLocalThumbnailPath')) {
             $thumbnail_path = $wrapper->getLocalThumbnailPath();
+          }
+          elseif (!empty($displays[$entity_id]) && !empty($displays[$entity_id]['settings'])) {
+            $current_display = $displays[$entity_id]['settings'];
+            $thumbnail_field_name = (!empty($current_display['thumbnail_field']))? $current_display['thumbnail_field'] : '';
+            if (!empty($thumbnail_field_name) && !empty($entities[$entity_id])) {
+              $thumbnail_field_item = field_get_items($entity_type, $entities[$entity_id], $thumbnail_field_name, NULL);
+              $thumbnail_path = $thumbnail_field_item[0]['uri'];
+            }
+            $thumbnail_style = (!empty($current_display['thumbnail_style']))? $current_display['thumbnail_style'] : '';
+            $classes[] = 'mfp-custom-thumbnail';
           }
           // Try the standard method to get a thumbnail.
           else {
@@ -116,9 +155,11 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
           }
           // Adjust $thumbnail_path based on the $scheme.
           // @todo Make the default thumbnail_style configurable.
-          $thumbnail_style = 'magnific_popup_thumbnail';
-          if (!empty($thumbnail_schemes[$scheme])) {
-            $thumbnail_style = $thumbnail_schemes[$scheme];
+          if (empty($thumbnail_style)) {
+            $thumbnail_style = 'magnific_popup_thumbnail';
+            if (!empty($thumbnail_schemes[$scheme])) {
+              $thumbnail_style = $thumbnail_schemes[$scheme];
+            }
           }
           $thumbnail_path = image_style_url($thumbnail_style, $thumbnail_path);
           // Get the title if it exists, or fallback to the filename.
@@ -131,6 +172,7 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
             'alt' => $alt,
             'thumbnail_path' => $thumbnail_path,
             'target_uri' => $wrapper->getExternalUrl(),
+            'classes' => $classes,
           ) + $item;
           $loaded_items[$item['fid']] = $gallery_item;
         }
@@ -194,7 +236,7 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
       '#text' => '',
       '#path' => $item['target_uri'],
       '#options' => array(
-        'attributes' => array('class' => array(), 'style' => array()),
+        'attributes' => array('class' => $item['classes'], 'style' => array()),
         'html' => TRUE,
       ),
     );
@@ -245,4 +287,34 @@ function _magnific_popup_gallery_options() {
     'random_item' => t('Gallery: Random Item Displayed'),
     'no_gallery' => t('No Gallery: Display Each Item Separately'),
   );
+}
+function _magnific_popup_thumbnail_options($all_fields, $field_bundle) {
+  $file_fields = array();
+
+  if (!empty($all_fields)) {
+    foreach ($all_fields as $field) {
+      $field_info = field_info_field($field);
+      if($field_info['type'] == 'file' || $field_info['type'] == 'image') {
+        $file_field = field_info_instance('node', $field, $field_bundle);
+        if (!empty($file_field['label']) && !empty($file_field['field_name'])) {
+          $file_fields[$file_field['field_name']] = $file_field['label'];
+        }
+      }
+    }
+  }
+
+  return $file_fields;
+}
+
+function _magnific_popup_image_style_options($all_fields, $field_bundle) {
+  $image_styles = array();
+  $all_styles = image_styles();
+
+  foreach($all_styles as $style) {
+    if (!empty($style['name']) && !empty($style['label'])) {
+      $image_styles[$style['name']] = $style['label'];
+    }
+  }
+
+  return $image_styles;
 }
