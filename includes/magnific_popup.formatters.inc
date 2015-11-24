@@ -132,6 +132,8 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
           $classes = array();
           // Determine the file's info and store it.
           $thumbnail_path = FALSE;
+          // Determine if the URL is an external URL.
+          $is_external_url = FALSE;
           // MediaYouTubeStreamWrapper implements getLocalThumbnailPath() to
           // find the thumbnail path.
           if (method_exists($wrapper,'getLocalThumbnailPath')) {
@@ -146,6 +148,15 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
             }
             $thumbnail_style = (!empty($current_display['thumbnail_style']))? $current_display['thumbnail_style'] : '';
             $classes[] = 'mfp-custom-thumbnail';
+            // If a thumbnail was not provided, use the default thumbnail.
+            if (empty($thumbnail_path) && function_exists('oembed_get_data')) {
+              $is_external_url = TRUE;
+              // Get oembed data
+              $oembed_data = oembed_get_data($wrapper->getExternalUrl());
+              if (!empty($oembed_data) && !empty($oembed_data['thumbnail_url'])) {
+                $thumbnail_path = '//' . file_uri_target($oembed_data['thumbnail_url']);
+              }
+            }
           }
           // Try the standard method to get a thumbnail.
           else {
@@ -161,7 +172,10 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
               $thumbnail_style = $thumbnail_schemes[$scheme];
             }
           }
-          $thumbnail_path = image_style_url($thumbnail_style, $thumbnail_path);
+          // Do not request image style URLs for external URLs
+          if (!$is_external_url) {
+            $thumbnail_path = image_style_url($thumbnail_style, $thumbnail_path);
+          }
           // Get the title if it exists, or fallback to the filename.
           $title = !empty($item['title']) ? $item['title'] : $item['filename'];
           // Get the alt if it exists, or fallback to the title.
