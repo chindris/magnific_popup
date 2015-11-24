@@ -15,8 +15,21 @@
       patterns: {
         youtube_short: {
           index: 'youtu.be/',
-          id: 'youtu.be/',
-          src: '//www.youtube.com/embed/%id%?autoplay=1'
+          id: function(url) {
+            var videoID = '';
+            var videoStart = 0;
+            // Get video ID and T param (if it exists).
+            var ytv = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*)(?:(\?t|&start)=(\d+))?.*/g;
+            var youtubeURL = ytv.exec(url);
+            if (typeof youtubeURL[2] !== 'undefined') {
+              videoID = youtubeURL[2];
+            }
+            if (typeof youtubeURL[4] !== 'undefined') {
+              videoStart = youtubeURL[4];
+            }
+            return videoID + '?start=' + videoStart + '&autoplay=1';
+          },
+          src: '//www.youtube.com/embed/%id%'
         }
       }
     }
