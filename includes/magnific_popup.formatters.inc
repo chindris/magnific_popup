@@ -212,14 +212,8 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
   if (!_magnific_popup_check_status()) {
     return FALSE;
   }
-  // Add Magnific Popup library to page.
-  drupal_add_library('magnific_popup', 'magnific_popup_formatter', FALSE);
-  // Add API-derived extension JavaScript to the page; we do this here instead
-  // of another hook to prevent adding JS when it isn't necessary (i.e. when we
-  // aren't actually displaying any Magnific Popup content on the page).
-  _magnific_popup_add_api_js();
-  // Create the main container.
   $element = array();
+  // Create the main container.
   $settings = $display['settings'];
   $popup_gallery = array(
     '#type' => 'container',
