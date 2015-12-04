@@ -35,8 +35,7 @@ function magnific_popup_field_formatter_settings_form($field, $instance, $view_m
   // Get all possible thumbnail fields.
   $all_fields = !empty($form['#fields'])? $form['#fields'] : array();
   $field_bundle = !empty($form['#bundle'])? $form['#bundle'] : '';
-  $thumbnail_options = _magnific_popup_thumbnail_options($all_fields, $field_bundle);
-  $thumbnail_available = (!empty($thumbnail_options))? TRUE : FALSE;
+  $thumbnail_field_options = _magnific_popup_thumbnail_field_options($all_fields, $field_bundle);
   
   // Get all possible image styles.
   $image_style_options = _magnific_popup_image_style_options();
@@ -52,7 +51,7 @@ function magnific_popup_field_formatter_settings_form($field, $instance, $view_m
     '#suffix' => '</p>',
   );
   $element['gallery_available']['#markup'] = $gallery_available ?
-    t('This field configuration <strong>supports multiple items</strong> and can display itself as a gallery of items!') : 
+    t('This field configuration <strong>supports multiple items</strong> and can display itself as a gallery of items!') :
     t('This field configuration <strong>does not support multiple items</strong> and cannot display itself as a gallery of items.');
   $element['gallery_style'] = array(
     '#type' => 'select',
@@ -62,21 +61,23 @@ function magnific_popup_field_formatter_settings_form($field, $instance, $view_m
     '#default_value' => $settings['gallery_style'],
     '#description' => t('Choose how this gallery displays its triggering element(s).'),
   );
+  $thumbnail_field = empty($settings['thumbnail_field']) ? $field['field_name'] : $settings['thumbnail_field'];
   $element['thumbnail_field'] = array(
     '#type' => 'select',
     '#title' => t('Image Thumbnail Field'),
-    '#options' => $thumbnail_options,
-    '#disabled' => !$thumbnail_available,
-    '#default_value' => $settings['thumbnail_field'],
-    '#description' => t('Select field to be used as thumbnail.'),
+    '#options' => $thumbnail_field_options,
+    '#disabled' => empty($thumbnail_field_options),
+    '#default_value' => $thumbnail_field,
+    '#description' => t('Select field to be used as thumbnail (by default use the same field for popup as for thumbnail).'),
   );
+  $thumbnail_style = empty($settings['thumbnail_style']) ? 'magnific_popup_thumbnail' : $settings['thumbnail_style'];
   $element['thumbnail_style'] = array(
     '#type' => 'select',
     '#title' => t('Thumbnail Style'),
     '#options' => $image_style_options,
-    '#disabled' => !$thumbnail_available,
-    '#default_value' => $settings['thumbnail_style'],
-    '#description' => t('Select image style used to display thumbnail.'),
+    '#disabled' => empty($image_style_options),
+    '#default_value' => $thumbnail_style,
+    '#description' => t('Select the image style used to display the thumbnail.'),
   );
   return $element;
 }
@@ -141,12 +142,17 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
           }
           elseif (!empty($displays[$entity_id]) && !empty($displays[$entity_id]['settings'])) {
             $current_display = $displays[$entity_id]['settings'];
-            $thumbnail_field_name = (!empty($current_display['thumbnail_field']))? $current_display['thumbnail_field'] : '';
+            $thumbnail_field_name = !empty($current_display['thumbnail_field']) ? $current_display['thumbnail_field'] : '';
+            // Skip all the lookups necessary for a custom thumbnail that is
+            // really just a circular reference.
+            if ($thumbnail_field_name === $field['field_name']) {
+              $thumbnail_field_name = '';
+            }
             if (!empty($thumbnail_field_name) && !empty($entities[$entity_id])) {
               $thumbnail_field_item = field_get_items($entity_type, $entities[$entity_id], $thumbnail_field_name, NULL);
               $thumbnail_path = $thumbnail_field_item[0]['uri'];
             }
-            $thumbnail_style = (!empty($current_display['thumbnail_style']))? $current_display['thumbnail_style'] : '';
+            $thumbnail_style = (!empty($current_display['thumbnail_style'])) ? $current_display['thumbnail_style'] : '';
             $classes[] = 'mfp-custom-thumbnail';
             // If a thumbnail was not provided, use the default thumbnail.
             if (empty($thumbnail_path) && function_exists('oembed_get_data')) {
@@ -165,7 +171,6 @@ function magnific_popup_field_formatter_prepare_view($entity_type, $entities, $f
             }
           }
           // Adjust $thumbnail_path based on the $scheme.
-          // @todo Make the default thumbnail_style configurable.
           if (empty($thumbnail_style)) {
             $thumbnail_style = 'magnific_popup_thumbnail';
             if (!empty($thumbnail_schemes[$scheme])) {
@@ -275,16 +280,6 @@ function magnific_popup_field_formatter_view($entity_type, $entity, $field, $ins
   if (count($items)) {
     $element[0] = $popup_gallery;
   }
-  // dpm(array(
-    // 'function' => __function__,
-    // 'entity_type' => $entity_type,
-    // 'entity' => $entity,
-    // 'field' => $field,
-    // 'instance' => $instance,
-    // 'langcode' => $langcode,
-    // 'items' => $items,
-    // 'display' => $display,
-  // ));
   return $element;
 }
 
@@ -296,14 +291,15 @@ function _magnific_popup_gallery_options() {
     'no_gallery' => t('No Gallery: Display Each Item Separately'),
   );
 }
-function _magnific_popup_thumbnail_options($all_fields, $field_bundle) {
-  $file_fields = array();
 
+
+function _magnific_popup_thumbnail_field_options($all_fields, $field_bundle) {
+  $file_fields = array();
   if (!empty($all_fields)) {
-    foreach ($all_fields as $field) {
-      $field_info = field_info_field($field);
+    foreach ($all_fields as $field_name) {
+      $field_info = field_info_field($field_name);
       if($field_info['type'] == 'file' || $field_info['type'] == 'image') {
-        $file_field = field_info_instance('node', $field, $field_bundle);
+        $file_field = field_info_instance('node', $field_name, $field_bundle);
         if (!empty($file_field['label']) && !empty($file_field['field_name'])) {
           $file_fields[$file_field['field_name']] = $file_field['label'];
         }
