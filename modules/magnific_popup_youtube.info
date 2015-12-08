@@ -1,8 +1,0 @@
-name = Magnific Popup YouTube
-description = Enhance Magnific Popup support for YouTube:// File schemes.
-package = "Media"
-core = 7.x
-dependencies[] = magnific_popup
-dependencies[] = media_youtube
-dependencies[] = imagecache_actions
-dependencies[] = imagecache_canvasactions
