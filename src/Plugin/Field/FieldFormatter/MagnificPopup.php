@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains \Drupal\magnific_popup\Plugin\Field\FieldFormatter.
+ * Contains \Drupal\magnific_popup\Plugin\Field\FieldFormatter\MagnificPopup.
  */
 
 namespace Drupal\magnific_popup\Plugin\Field\FieldFormatter;
