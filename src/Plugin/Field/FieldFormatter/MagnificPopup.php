@@ -100,7 +100,7 @@ class MagnificPopup extends ImageFormatterBase {
 
     foreach ($files as $delta => $file) {
       $image_uri = $file->getFileUri();
-      $popup_image_path = ImageStyle::load($popup_image_style)->buildUrl($image_uri);
+      $popup_image_path = !empty($popup_image_style)? ImageStyle::load($popup_image_style)->buildUrl($image_uri) : $image_uri;
       // Depending on the outcome of https://www.drupal.org/node/2622586,
       // Either a class will need to be added to the $url object,
       // Or a custom theme function might be needed to do so.
